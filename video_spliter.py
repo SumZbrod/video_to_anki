@@ -16,6 +16,7 @@ def total_seconds(str_time: str) -> float:
     """
     Accept str about time ant calculate to float seconds
     """
+    # print(str_time)
     str_time = str_time.replace(',', '.')
     data = str_time.split(':')
     res = 0
@@ -23,16 +24,19 @@ def total_seconds(str_time: str) -> float:
         res += 60**(2-i)*float(data[i])
     return res
     
-def made_script_list(script, min_length):
+def made_script_list(script, min_length=2):
     """
     Accept subtitles 
     Return list of start and finish in seconds and text
     """
     res_list = []
-    scr = script.replace('\u202a', '')
+    script = script.replace('\u202a', '')
+    script = script.replace('{\\an8}', '')
     for scr in script.split('\n\n'):
-        text = '\n'.join(scr.split('\n')[2:])
-        res_list.append((tuple(map(total_seconds, block.split(' --> '))), text))
+        scr = scr.split('\n')
+        text = '\n'.join(scr[2:])
+        if len(text) >= min_length:
+            res_list.append((tuple(map(total_seconds, scr[1].split(' --> '))), text))
     return res_list
 
 def split_video(file_name):
@@ -48,7 +52,9 @@ def split_video(file_name):
         script = made_script_list(script)
         with moviepy.editor.VideoFileClip(file_path) as video:
             for i, block in enumerate(script):
-                delta_time, text = block
+                # if i % 50 != 0:
+                #     continue
+                delta_time, text = block    
                 title = f'{file_name}#{text}'
                 if os.path.exists(title+'.mp3') and os.path.exists(title+'.mp4'):
                     continue
