@@ -23,21 +23,16 @@ def total_seconds(str_time: str) -> float:
         res += 60**(2-i)*float(data[i])
     return res
     
-def made_script_list(scr):
+def made_script_list(script, min_length):
     """
     Accept subtitles 
     Return list of start and finish in seconds and text
     """
     res_list = []
-    scr = scr.split('\n')
-    for i, block in enumerate(scr):
-        if '-->' in block and i<(len(scr)-1):
-            if len(scr[1+i]) > 0:
-                text = scr[1+i]
-                if '\u202a' in text:
-                    text = text[1:]
-                    text = text.replace('\u202a', '')
-                    res_list.append((tuple(map(total_seconds, block.split(' --> '))), text))
+    scr = script.replace('\u202a', '')
+    for scr in script.split('\n\n'):
+        text = '\n'.join(scr.split('\n')[2:])
+        res_list.append((tuple(map(total_seconds, block.split(' --> '))), text))
     return res_list
 
 def split_video(file_name):
@@ -54,6 +49,9 @@ def split_video(file_name):
         with moviepy.editor.VideoFileClip(file_path) as video:
             for i, block in enumerate(script):
                 delta_time, text = block
+                title = f'{file_name}#{text}'
+                if os.path.exists(title+'.mp3') and os.path.exists(title+'.mp4'):
+                    continue
                 sub_video = video.subclip(*delta_time)
                 sub_video.audio.write_audiofile(f'{audio_path}{file_name}#{text}.mp3')
                 # subs = [(tuple(map(round, delta_time)), text)]
@@ -62,8 +60,6 @@ def split_video(file_name):
                 # sub_video = moviepy.editor.CompositeVideoClip([video, subtitles.set_pos(('center','bottom'))])
                 sub_video.write_videofile(f'{video_path}{file_name}#{text}.mp4')
                 # write(f'{audio_path}{text}.mp3', sub_video.audio.to_soundarray())
-                if i > 3:
-                    break
 
 def generate_deck(audio_list, deck_name):
     anki_deck = genanki.Deck(random.randrange(1 << 30, 1 << 31), deck_name)
@@ -86,6 +82,6 @@ if __name__ == '__main__':
 
     audio_list = list(filter(lambda x: x[-4:]=='.mp3', os.listdir(audio_path)))
 
-    generate_deck(audio_list, 'test_')
+    generate_deck(audio_list, 'komisan')
     
-    print(f'{time()-start} seconds for executing')
+    print(f'{time()-start} seconds for {len(audio_list)} cards')
