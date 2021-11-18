@@ -2,14 +2,14 @@ from genericpath import exists
 import moviepy.editor
 import os
 from config import *
-import shutil
+# import shutil
 import genanki
 import random
-import pydub 
-import numpy as np
+# import pydub 
+# import numpy as np
 import pydub 
 from moviepy.video.tools.subtitles import SubtitlesClip
-
+from time import time
 
 
 def total_seconds(str_time: str) -> float:
@@ -45,7 +45,7 @@ def split_video(file_name):
     file_name = file_name.split('.')[0]
     file_name = file_name.replace(' ', '_')
     script_path = f'scripts/{file_name}.srt'
-    generator = lambda txt: moviepy.editor.TextClip(txt, font='Arial', fontsize=16, color='white')
+    # generator = lambda txt: moviepy.editor.TextClip(txt, font='Arial', fontsize=16, color='white')
 
     if os.path.exists(script_path) or os.system(f'ffmpeg -i {file_path} -map 0:s:0 {script_path}') == 0:
         with open(script_path) as f:
@@ -55,12 +55,12 @@ def split_video(file_name):
             for i, block in enumerate(script):
                 delta_time, text = block
                 sub_video = video.subclip(*delta_time)
-                sub_video.audio.write_audiofile(f'{audio_path}{text}.mp3')
+                sub_video.audio.write_audiofile(f'{audio_path}{file_name}#{text}.mp3')
                 # subs = [(tuple(map(round, delta_time)), text)]
                 # print(subs)
                 # subtitles = SubtitlesClip(subs, generator)
                 # sub_video = moviepy.editor.CompositeVideoClip([video, subtitles.set_pos(('center','bottom'))])
-                sub_video.write_videofile(f'{video_path}{text}.mp4')
+                sub_video.write_videofile(f'{video_path}{file_name}#{text}.mp4')
                 # write(f'{audio_path}{text}.mp3', sub_video.audio.to_soundarray())
                 if i > 3:
                     break
@@ -68,9 +68,8 @@ def split_video(file_name):
 def generate_deck(audio_list, deck_name):
     anki_deck = genanki.Deck(random.randrange(1 << 30, 1 << 31), deck_name)
     for name in audio_list:
-        print(name)
         # note = genanki.Note(model=anki_model, fields=[f'[sound:{name}]', name.split('.')[0]])
-        note = genanki.Note(model=anki_model, fields=[f'[sound:{name}]', f'[sound:{name[:-1]}4]', name[:-4]])
+        note = genanki.Note(model=anki_model, fields=[f'[sound:{name}]', f'[sound:{name[:-1]}4]', name.split('#')[1][:-4]])
         anki_deck.add_note(note)
     my_package = genanki.Package(anki_deck)
     my_package.media_files = list(map(lambda x: audio_path+x, audio_list)) + list(map(lambda x: video_path+x[:-1]+'4', audio_list))
@@ -79,7 +78,7 @@ def generate_deck(audio_list, deck_name):
     # genanki.Package(my_package).write_to_file(f'{deck_name}.apkg')
 
 if __name__ == '__main__':
-
+    start = time()
     file_list = list(filter(lambda x: os.path.isfile(path_to_dir+x), os.listdir(path_to_dir)))
 
     for file_name in file_list:
@@ -89,3 +88,4 @@ if __name__ == '__main__':
 
     generate_deck(audio_list, 'test_')
     
+    print(f'{time()-start} seconds for executing')
