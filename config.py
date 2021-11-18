@@ -17,11 +17,12 @@ anki_model = genanki.Model(
   fields=[
     {'name': 'Audio_question'},
     {'name': 'Video_answer'},
+    {'name': 'kanji'},
   ],
   templates=[
     {
       'name': 'Card 1',
       'qfmt': '{{Audio_question}}',
-      'afmt': '{{FrontSide}}<hr id="answer">{{Video_answer}}',
+      'afmt': '{{FrontSide}}<hr id="answer">{{Video_answer}}{{kanji}}',
     },
   ])

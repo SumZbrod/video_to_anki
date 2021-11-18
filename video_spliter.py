@@ -8,6 +8,9 @@ import random
 import pydub 
 import numpy as np
 import pydub 
+from moviepy.video.tools.subtitles import SubtitlesClip
+
+
 
 def total_seconds(str_time: str) -> float:
     """
@@ -42,7 +45,8 @@ def split_video(file_name):
     file_name = file_name.split('.')[0]
     file_name = file_name.replace(' ', '_')
     script_path = f'scripts/{file_name}.srt'
-    
+    generator = lambda txt: moviepy.editor.TextClip(txt, font='Arial', fontsize=16, color='white')
+
     if os.path.exists(script_path) or os.system(f'ffmpeg -i {file_path} -map 0:s:0 {script_path}') == 0:
         with open(script_path) as f:
             script = f.read()
@@ -51,8 +55,12 @@ def split_video(file_name):
             for i, block in enumerate(script):
                 delta_time, text = block
                 sub_video = video.subclip(*delta_time)
-                sub_video.write_videofile(f'{video_path}{text}.mp4')
                 sub_video.audio.write_audiofile(f'{audio_path}{text}.mp3')
+                # subs = [(tuple(map(round, delta_time)), text)]
+                # print(subs)
+                # subtitles = SubtitlesClip(subs, generator)
+                # sub_video = moviepy.editor.CompositeVideoClip([video, subtitles.set_pos(('center','bottom'))])
+                sub_video.write_videofile(f'{video_path}{text}.mp4')
                 # write(f'{audio_path}{text}.mp3', sub_video.audio.to_soundarray())
                 if i > 3:
                     break
@@ -62,7 +70,7 @@ def generate_deck(audio_list, deck_name):
     for name in audio_list:
         print(name)
         # note = genanki.Note(model=anki_model, fields=[f'[sound:{name}]', name.split('.')[0]])
-        note = genanki.Note(model=anki_model, fields=[f'[sound:{name}]', f'[sound:{name[:-1]}4]'])
+        note = genanki.Note(model=anki_model, fields=[f'[sound:{name}]', f'[sound:{name[:-1]}4]', name[:-4]])
         anki_deck.add_note(note)
     my_package = genanki.Package(anki_deck)
     my_package.media_files = list(map(lambda x: audio_path+x, audio_list)) + list(map(lambda x: video_path+x[:-1]+'4', audio_list))
