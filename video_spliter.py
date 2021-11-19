@@ -1,16 +1,12 @@
-from genericpath import exists
 import moviepy.editor
 import os
 from config import *
-# import shutil
 import genanki
 import random
-# import pydub 
-# import numpy as np
-import pydub 
 from moviepy.video.tools.subtitles import SubtitlesClip
 from time import time
-
+import numpy as np
+import re
 
 def total_seconds(str_time: str) -> float:
     """
@@ -24,18 +20,24 @@ def total_seconds(str_time: str) -> float:
         res += 60**(2-i)*float(data[i])
     return res
     
-def made_script_list(script, min_length=2):
+def made_script_list(script, filter_funcs=None):
     """
     Accept subtitles 
     Return list of start and finish in seconds and text
     """
+    if filter_funcs == None:
+        filter_funcs = [lambda x: True]
+    re_bracket = list(set(re.findall(r'(（.+?）)', script))) + ['\u202a', '{\\an8}', '\u3000']
+    for r in re_bracket:
+        script = script.replace(r, '')
     res_list = []
-    script = script.replace('\u202a', '')
-    script = script.replace('{\\an8}', '')
     for scr in script.split('\n\n'):
         scr = scr.split('\n')
         text = '\n'.join(scr[2:])
-        if len(text) >= min_length:
+        allowed_flag = True
+        for b_func in filter_funcs:
+            allowed_flag &= b_func(text) 
+        if allowed_flag:
             res_list.append((tuple(map(total_seconds, scr[1].split(' --> '))), text))
     return res_list
 
@@ -49,12 +51,14 @@ def split_video(file_name):
     if os.path.exists(script_path) or os.system(f'ffmpeg -i {file_path} -map 0:s:0 {script_path}') == 0:
         with open(script_path) as f:
             script = f.read()
-        script = made_script_list(script)
+        script = made_script_list(script, ja_filter_funcs)
         with moviepy.editor.VideoFileClip(file_path) as video:
-            for i, block in enumerate(script):
-                # if i % 50 != 0:
-                #     continue
-                delta_time, text = block    
+            i = 0
+            np.random.shuffle(script)
+            for block in script:
+                # if i == 10:
+                    # break
+                delta_time, text = block        
                 title = f'{file_name}#{text}'
                 if os.path.exists(title+'.mp3') and os.path.exists(title+'.mp4'):
                     continue
@@ -66,6 +70,7 @@ def split_video(file_name):
                 # sub_video = moviepy.editor.CompositeVideoClip([video, subtitles.set_pos(('center','bottom'))])
                 sub_video.write_videofile(f'{video_path}{file_name}#{text}.mp4')
                 # write(f'{audio_path}{text}.mp3', sub_video.audio.to_soundarray())
+                i += 1
 
 def generate_deck(audio_list, deck_name):
     anki_deck = genanki.Deck(random.randrange(1 << 30, 1 << 31), deck_name)
@@ -79,8 +84,10 @@ def generate_deck(audio_list, deck_name):
     # .write_to_file(f'{deck_name}.apkg')
     # genanki.Package(my_package).write_to_file(f'{deck_name}.apkg')
 
+
 if __name__ == '__main__':
     start = time()
+    min_length = 4
     file_list = list(filter(lambda x: os.path.isfile(path_to_dir+x), os.listdir(path_to_dir)))
 
     for file_name in file_list:
