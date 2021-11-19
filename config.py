@@ -1,7 +1,17 @@
 import genanki
-# from numpy import random
-# import numpy as np
 import random
+import data
+
+def only_kana(X, min_value=4):
+    allowed_chars = data.kana + data.simple_eng + data.simple_jp
+    for x in X:
+        if x not in allowed_chars:
+            return False
+    return len({x for x in data.kana} & {x for x in X}) >= min_value
+
+def len_min(X, min_value=4):
+  return len(X) >= min_value
+
 # raw videos
 path_to_dir = 'videos/'
 
@@ -40,3 +50,6 @@ anki_model = genanki.Model(
 .card3 { background-color: #ffffff; }
   """
   )
+
+
+ja_filter_funcs = [only_kana, len_min]
