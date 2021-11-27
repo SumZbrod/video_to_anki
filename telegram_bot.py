@@ -43,6 +43,7 @@ class TutovnikAudio:
             self.user_audiotable = json.load(f)
         
         self.audio_listdir = os.listdir(audio_path)
+        self.last_messages = {}
 
     def start_bot(self):
         # print('\n\t start_bot\n')
@@ -50,7 +51,7 @@ class TutovnikAudio:
             self.dispatcher.add_handler(CommandHandler(name, func))
         self.dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), self.Command_tracker))
         self.dispatcher.add_handler(CallbackQueryHandler(self.Button_tracker))
-        self.updater.start_polling()
+        self.updater.start_polling()    
         self.updater.idle()
 
     def check_user(self, user_id):
@@ -60,7 +61,9 @@ class TutovnikAudio:
             audio_indexes = [i for i in range(len(self.audio_listdir))]
             np.random.shuffle(audio_indexes)
             self.user_audiotable[user_id] = audio_indexes
-    
+        if user_id not in self.last_messages:
+            self.last_messages[user_id] = {'audio_id': None, 'answer_id': None, 'true_answer_id': None}
+
     def update_user_stat(self, user_id, id_sound, status):
         self.check_user(user_id)
         self.user_stat[user_id]['id_sound'].append(id_sound)  
@@ -78,11 +81,15 @@ class TutovnikAudio:
     
     def Command_tracker(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
+        answer_id = update.message.message_id
+
         self.check_user(user_id)
         if len(context.user_data) == 0:
             self.user_check(update, context)
         elif context.user_data[user_id]:
             self.func_dict[context.user_data[user_id]](update, context)
+        if context.user_data[user_id] == 'answer':
+            self.last_messages[user_id]['answer_id'] = answer_id
 
     def Button_tracker(self, update: Updater, context: CallbackContext):
         user_id = get_user_id(update)
@@ -91,9 +98,12 @@ class TutovnikAudio:
         status = query.data
         id_sound = self.user_audiotable[user_id][0:1]
         if status == 'drop':
+            yellow_print(self.last_messages)
             self.user_audiotable[user_id] = self.user_audiotable[user_id][1:]
+            self.bot.delete_message(user_id, self.last_messages[user_id]['audio_id'])
+            self.bot.delete_message(user_id, self.last_messages[user_id]['answer_id'])
+            self.bot.delete_message(user_id, self.last_messages[user_id]['true_answer_id'])
         elif status == 'correct':
-            yellow_print(status)
             self.user_audiotable[user_id] = self.user_audiotable[user_id][1:]
         elif status == 'again':
             self.user_audiotable[user_id] = self.user_audiotable[user_id][1:] + id_sound
@@ -107,14 +117,13 @@ class TutovnikAudio:
         # self.bot.send_message(user_id, '/send_audio')
         self.command_send_audio(update, context)
 
-
     def command_send_audio(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
         audio_name = self.audio_listdir[self.user_audiotable[user_id][0]]        
         with open(audio_path+audio_name, 'rb') as f:
-            self.bot.send_audio(user_id, f, performer=' ', title=' ')
+            audio_message = self.bot.send_audio(user_id, f, performer=' ', title=' ', )
         context.user_data[user_id] = 'answer'
-        yellow_print(self.user_audiotable)
+        self.last_messages[user_id]['audio_id'] = audio_message.message_id
 
     def command_answer(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
@@ -128,7 +137,9 @@ class TutovnikAudio:
         
         answer_markup = telegram.InlineKeyboardMarkup([[drop_button, correct_button, again_button]])
 
-        self.bot.send_message(user_id, true_answer, reply_markup=answer_markup)
+        answer_message = self.bot.send_message(user_id, true_answer, reply_markup=answer_markup)
+
+        self.last_messages[user_id]['true_answer_id'] = answer_message.message_id
 
 if __name__ == '__main__':
     Tut = TutovnikAudio()
