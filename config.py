@@ -1,6 +1,8 @@
 import genanki
 import random
 import data
+import json
+import os 
 
 def only_kana(X, min_value=4):
     allowed_chars = data.kana + data.simple_eng + data.simple_jp
@@ -51,5 +53,21 @@ anki_model = genanki.Model(
   """
   )
 
-
 ja_filter_funcs = [only_kana, len_min]
+
+
+#BOT
+
+user_stat_path = 'user_stat.json'
+user_audiotable_path = 'user_audiotable.json'
+
+if not os.path.exists(user_stat_path):
+  empty_user_data = json.loads('{}')
+  with open(user_stat_path, 'w') as f:
+    json.dump(empty_user_data, f)
+  
+
+if not os.path.exists(user_audiotable_path):
+  empty_user_data = json.loads('{}')
+  with open(user_audiotable_path, 'w') as f:
+    json.dump(empty_user_data, f)
