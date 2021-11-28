@@ -78,8 +78,10 @@ if not os.path.exists(user_audiolistdir_path):
   with open(user_audiolistdir_path, 'w') as f:
     json.dump(user_audiolistdir, f)
 else:
-  with open(user_audiolistdir_path, 'w') as f:
-    user_audiolistdir = json.dump(f)
+  with open(user_audiolistdir_path, 'r') as f:
+    user_audiolistdir = json.load(f)
   for name in os.listdir(audio_path):
     if name not in user_audiolistdir:
       user_audiolistdir.append(name)
+  with open(user_audiolistdir_path, 'w') as f:
+    json.dump(user_audiolistdir, f)

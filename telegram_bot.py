@@ -21,6 +21,11 @@ def get_user_id(raw_data: Update):
         res = raw_data['message']['chat']['id']
     return res
 
+def load_json(path):
+    with open(path) as f: 
+        A = json.load(f)
+    return dict(zip(map(int, A.keys()), A.values()))
+
 class TutovnikAudio:
     def __init__(self) -> None:
         with open('TOKEN') as f:
@@ -36,15 +41,12 @@ class TutovnikAudio:
         self.func_dict = {
             'answer': self.command_answer,
         }
-        with open(user_stat_path) as f: 
-            self.user_stat = json.load(f)
-        with open(user_audiotable_path) as f:
-            self.user_audiotable = json.load(f)
-        with open(user_audiotable_path) as f:
-            self.user_audiotable = json.load(f)
-        
-        with open(user_settings_path) as f:
-            self.user_settings = json.load(f)
+
+        self.user_stat = load_json(user_stat_path) 
+        self.user_audiotable = load_json(user_audiotable_path)
+        self.user_audiotable = load_json(user_audiotable_path)
+        self.user_settings = load_json(user_settings_path)
+
         self.audio_listdir = os.listdir(audio_path)
         self.last_messages = {}
 
@@ -64,12 +66,14 @@ class TutovnikAudio:
         if user_id not in self.user_audiotable:
             audio_indexes = [i for i in range(len(self.audio_listdir))]
             np.random.shuffle(audio_indexes)
+
             self.user_audiotable[user_id] = audio_indexes
         if user_id not in self.last_messages:
             self.last_messages[user_id] = {'audio_id': None, 'answer_id': None, 'true_answer_id': None}
         if user_id not in context.user_data:
             context.user_data[user_id] = 'send_audio'
-
+        yellow_print('check_user')
+        yellow_print(self.user_stat)
     def update_user_stat(self, update: Update, context:CallbackContext):
         query = update.callback_query
         query.answer()
@@ -82,10 +86,14 @@ class TutovnikAudio:
         time_for_answer = time() - self.last_messages[user_id]['abs_time'] 
         self.user_stat[user_id]['time'].append(time_for_answer) 
         self.save_user_stat()
+        yellow_print('update_user_stat')
+        yellow_print(self.user_stat)
 
     def save_user_stat(self):
         with open(user_stat_path, 'w') as f:
             json.dump(self.user_stat, f)
+        yellow_print('save_user_stat')
+        yellow_print(self.user_stat)
     
     def save_user_audiotable(self):
         with open(user_audiotable_path, 'w') as f:
@@ -102,7 +110,6 @@ class TutovnikAudio:
             self.command_answer(update, context)
         if context.user_data[user_id] == 'send_audio':
             self.command_send_audio(update, context)
-        yellow_print(context.user_data)
 
     def Button_tracker(self, update: Updater, context: CallbackContext):
         query = update.callback_query
@@ -134,6 +141,7 @@ class TutovnikAudio:
         self.update_user_stat(update, context)
         self.command_send_audio(update, context)
         self.save_user_audiotable()
+        
 
     def command_start(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
@@ -172,7 +180,6 @@ class TutovnikAudio:
 
     def command_stat(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
-        user_stat = self.user_stat[user_id]
         
     def command_settings(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
