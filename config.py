@@ -14,6 +14,13 @@ def only_kana(X, min_value=4):
 def len_min(X, min_value=4):
   return len(X) >= min_value
 
+def set_dev(*paths):
+  for path in paths:
+    if not os.path.exists(path):
+      empty_user_data = json.loads('{}')
+      with open(path, 'w') as f:
+        json.dump(empty_user_data, f)
+
 # raw videos
 path_to_dir = 'videos/'
 
@@ -61,14 +68,6 @@ ja_filter_funcs = [len_min]
 
 user_stat_path = 'user_stat.json'
 user_audiotable_path = 'user_audiotable.json'
+user_settings_path = 'user_settings.json'
 
-if not os.path.exists(user_stat_path):
-  empty_user_data = json.loads('{}')
-  with open(user_stat_path, 'w') as f:
-    json.dump(empty_user_data, f)
-  
-
-if not os.path.exists(user_audiotable_path):
-  empty_user_data = json.loads('{}')
-  with open(user_audiotable_path, 'w') as f:
-    json.dump(empty_user_data, f)
+set_dev(user_stat_path, user_audiotable_path, user_settings_path)
