@@ -67,7 +67,19 @@ ja_filter_funcs = [len_min]
 #BOT
 
 user_stat_path = 'user_stat.json'
+user_audiolistdir_path = 'user_audiolistdir.json'
 user_audiotable_path = 'user_audiotable.json'
 user_settings_path = 'user_settings.json'
 
 set_dev(user_stat_path, user_audiotable_path, user_settings_path)
+
+if not os.path.exists(user_audiolistdir_path):
+  user_audiolistdir = os.listdir(audio_path)
+  with open(user_audiolistdir_path, 'w') as f:
+    json.dump(user_audiolistdir, f)
+else:
+  with open(user_audiolistdir_path, 'w') as f:
+    user_audiolistdir = json.dump(f)
+  for name in os.listdir(audio_path):
+    if name not in user_audiolistdir:
+      user_audiolistdir.append(name)

@@ -57,7 +57,8 @@ class TutovnikAudio:
         self.updater.start_polling()    
         self.updater.idle()
 
-    def check_user(self, user_id):
+    def check_user(self, update: Update, context:CallbackContext):
+        user_id = get_user_id(update)
         if user_id not in self.user_stat:
             self.user_stat[user_id] = {'id_sound': [], 'status': [], 'time': []}
         if user_id not in self.user_audiotable:
@@ -66,9 +67,16 @@ class TutovnikAudio:
             self.user_audiotable[user_id] = audio_indexes
         if user_id not in self.last_messages:
             self.last_messages[user_id] = {'audio_id': None, 'answer_id': None, 'true_answer_id': None}
+        if user_id not in context.user_data:
+            context.user_data[user_id] = 'send_audio'
 
-    def update_user_stat(self, user_id, id_sound, status):
-        self.check_user(user_id)
+    def update_user_stat(self, update: Update, context:CallbackContext):
+        query = update.callback_query
+        query.answer()
+        self.check_user(update, context)
+        user_id = get_user_id(update)
+        id_sound = self.user_audiotable[user_id][0:1]
+        status = query.data
         self.user_stat[user_id]['id_sound'].append(id_sound)  
         self.user_stat[user_id]['status'].append(status)  
         time_for_answer = time() - self.last_messages[user_id]['abs_time'] 
@@ -86,25 +94,27 @@ class TutovnikAudio:
     def Command_tracker(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
         answer_id = update.message.message_id
-
-        self.check_user(user_id)
-        if context.user_data[user_id]:
-            self.func_dict[context.user_data[user_id]](update, context)
+        self.check_user(update, context)
         if context.user_data[user_id] == 'answer':
             self.last_messages[user_id]['answer_id'] = answer_id
             audio_id = self.last_messages[user_id]['audio_id']
             self.bot.edit_message_reply_markup(user_id, audio_id)
-
+            self.command_answer(update, context)
+        if context.user_data[user_id] == 'send_audio':
+            self.command_send_audio(update, context)
+        yellow_print(context.user_data)
 
     def Button_tracker(self, update: Updater, context: CallbackContext):
+        query = update.callback_query
+        query.answer()
+        
         user_id = get_user_id(update)
+        id_sound = self.user_audiotable[user_id][0:1]
+        status = query.data
+        
         audio_id = self.last_messages[user_id]['audio_id']
         true_answer_id = self.last_messages[user_id]['true_answer_id']
 
-        query = update.callback_query
-        query.answer()
-        status = query.data
-        id_sound = self.user_audiotable[user_id][0:1]
         
         if status == 'drop_audio':
             self.user_audiotable[user_id] = self.user_audiotable[user_id][1:]
@@ -121,13 +131,13 @@ class TutovnikAudio:
                 self.user_audiotable[user_id] = self.user_audiotable[user_id][1:] + id_sound
             self.bot.edit_message_reply_markup(user_id, true_answer_id)
 
-        self.update_user_stat(user_id, id_sound[0], status)
+        self.update_user_stat(update, context)
         self.command_send_audio(update, context)
         self.save_user_audiotable()
 
     def command_start(self, update: Update, context:CallbackContext):
         user_id = get_user_id(update)
-        self.check_user(user_id)
+        self.check_user(update, context)
         # self.bot.send_message(user_id, '/send_audio')
         self.command_send_audio(update, context)
 
