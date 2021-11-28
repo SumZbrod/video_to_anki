@@ -53,7 +53,8 @@ anki_model = genanki.Model(
   """
   )
 
-ja_filter_funcs = [only_kana, len_min]
+# ja_filter_funcs = [only_kana, len_min]
+ja_filter_funcs = [len_min]
 
 
 #BOT

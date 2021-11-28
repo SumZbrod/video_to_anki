@@ -5,9 +5,8 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Callback
 from config import *
 import numpy as np
 from time import time
-import logging
 from colorama import Fore
-
+import logging
 
 logging.basicConfig(format='%(levelname)s - %(message)s',
                     level=logging.DEBUG)
